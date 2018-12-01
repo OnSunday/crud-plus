@@ -12,6 +12,11 @@ public class FIELD {
     private Class itemClassName;
     private BaseMapper itemMapper;
 
+    //for peer
+    private String itemPeerFieldName;
+    private Class itemRelationClassName;
+    private BaseMapper itemPeerRelationMapper;
+
     public BaseMapper getItemMapper() {
         return itemMapper;
     }
@@ -42,6 +47,36 @@ public class FIELD {
 
     public void setItemKeyName(String itemKeyName) {
         this.itemKeyName = itemKeyName;
+    }
+
+
+    /**
+     * item peer
+     * @return
+     */
+
+    public String getItemPeerFieldName() {
+        return itemPeerFieldName;
+    }
+
+    public void setItemPeerFieldName(String itemPeerFieldName) {
+        this.itemPeerFieldName = itemPeerFieldName;
+    }
+
+    public Class getRelationClassName() {
+        return itemRelationClassName;
+    }
+
+    public void setRelationClassName(Class itemRelationClassName) {
+        this.itemRelationClassName = itemRelationClassName;
+    }
+
+    public BaseMapper getItemPeerRelationMapper() {
+        return itemPeerRelationMapper;
+    }
+
+    public void setItemPeerRelationMapper(BaseMapper itemPeerRelationMapper) {
+        this.itemPeerRelationMapper = itemPeerRelationMapper;
     }
 }
 

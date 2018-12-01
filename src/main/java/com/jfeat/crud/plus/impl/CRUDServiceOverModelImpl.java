@@ -6,6 +6,7 @@ import com.jfeat.crud.base.exception.BusinessException;
 import com.jfeat.crud.base.tips.Ids;
 import com.jfeat.crud.plus.*;
 import com.jfeat.crud.plus.agent.CRUDServiceChildAgent;
+import com.jfeat.crud.plus.agent.CRUDServicePeerAgent;
 import com.jfeat.crud.plus.agent.CRUDServiceSlaveAgent;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,21 +22,27 @@ import java.util.Map;
 public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServiceOnlyImpl<T>
         implements CRUDServiceOverModel<T, M> {
 
-    private List<CRUDServiceSlaveAgent> slaveModelingAgents = null;
+    private List<CRUDServiceSlaveAgent> slaveAgents = null;
     private List<CRUDServiceChildAgent> childAgents = null;
+    private List<CRUDServicePeerAgent> peerAgents = null;
+
     private Map<Object, String> slaveKeyNames = new HashMap<>();
     private Map<Object, String> childKeyNames = new HashMap<>();
+    private Map<Object, String> peerKeyNames = new HashMap<>();
 
+    /// for slave agent
     protected abstract String[] slaveFieldNames();
-
-    protected abstract String[] childFieldNames();
-
     protected abstract FIELD onSlaveFieldItem(String field);
 
+    // for child agent
+    protected abstract String[] childFieldNames();
     protected abstract FIELD onChildFieldItem(String field);
 
-    protected abstract Class<T> masterClassName();
+    // for peer agent
+    protected String[] peerFieldNames(){return new String[0];}
+    protected FIELD onPeerFieldItem(String field){return null;}
 
+    protected abstract Class<T> masterClassName();
     protected abstract Class<M> modelClassName();
 
     public CRUDServiceOverModelImpl() {
@@ -47,19 +54,21 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
         if (!mInited) {
             mInited = true;
 
-            String[] fieldNames = slaveFieldNames();
-            if (fieldNames != null && fieldNames.length > 0) {
-                slaveModelingAgents = new ArrayList<>();
+            /// handle slaves
+            String[] slaveNames = slaveFieldNames();
+            if (slaveNames != null && slaveNames.length > 0) {
+                slaveAgents = new ArrayList<>();
 
                 for (String field : slaveFieldNames()) {
                     FIELD _field = onSlaveFieldItem(field);
 
                     CRUDServiceSlaveAgent agent = new CRUDServiceSlaveAgent<T, M, Object>(
-                            getMasterMapper(), _field.getItemMapper(), _field.getItemFieldName(), _field.getItemClassName()
+                            getMasterMapper(), _field.getItemMapper(),
+                            _field.getItemFieldName(), _field.getItemClassName()
                     );
                     agent.setMasterClassName(masterClassName());
 
-                    slaveModelingAgents.add(agent);
+                    slaveAgents.add(agent);
 
                     /// record the slaveKeyName by agent
                     slaveKeyNames.put(agent, field);
@@ -76,7 +85,8 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
                     FIELD _field = onChildFieldItem(field);
 
                     CRUDServiceChildAgent agent = new CRUDServiceChildAgent<T, M, Object>(
-                            getMasterMapper(), _field.getItemMapper(), _field.getItemFieldName(), _field.getItemClassName()
+                            getMasterMapper(), _field.getItemMapper(),
+                            _field.getItemFieldName(), _field.getItemClassName()
                     );
                     agent.setMasterClassName(masterClassName());
 
@@ -86,6 +96,33 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
                     childKeyNames.put(agent, field);
                 }
             }
+
+
+            /// handle peer
+            String[] peerNames = peerFieldNames();
+            if (peerNames != null && peerNames.length > 0) {
+                peerAgents = new ArrayList<>();
+
+                for (String field : peerFieldNames()) {
+                    FIELD _field = onPeerFieldItem(field);
+
+                    CRUDServicePeerAgent agent = new CRUDServicePeerAgent<T, M,Object,Object>(
+                            getMasterMapper(),
+                            _field.getItemMapper(),
+                            _field.getItemPeerRelationMapper(),
+                            new String[]{_field.getItemFieldName(), _field.getItemPeerFieldName()},
+                            _field.getItemClassName(),
+                            _field.getRelationClassName()
+                    );
+                    agent.setMasterClassName(masterClassName());
+
+                    peerAgents.add(agent);
+
+                    /// record the peerKeyName by agent
+                    peerKeyNames.put(agent, field);
+                }
+            }
+
         }
     }
 
@@ -124,8 +161,8 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
         }
 
         /// foreach slaves
-        if (slaveModelingAgents != null) {
-            for (CRUDServiceSlaveAgent agent : slaveModelingAgents) {
+        if (slaveAgents != null) {
+            for (CRUDServiceSlaveAgent agent : slaveAgents) {
                 affected += agent.createMaster(m, filter, slaveKeyNames.get(agent), null);
             }
         }
@@ -134,6 +171,13 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
         if (childAgents != null) {
             for (CRUDServiceChildAgent agent : childAgents) {
                 affected += agent.createMaster(m, filter, childKeyNames.get(agent), null);
+            }
+        }
+
+        /// append peer data
+        if (peerAgents != null) {
+            for (CRUDServicePeerAgent agent : peerAgents) {
+                affected += agent.createMaster(m, filter, peerKeyNames.get(agent), null);
             }
         }
 
@@ -166,8 +210,8 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
          */
 
         /// foreach slaves
-        if (slaveModelingAgents != null) {
-            for (CRUDServiceSlaveAgent agent : slaveModelingAgents) {
+        if (slaveAgents != null) {
+            for (CRUDServiceSlaveAgent agent : slaveAgents) {
                 affected += agent.updateMaster(m, filter, slaveKeyNames.get(agent), null);
             }
         }
@@ -176,6 +220,13 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
         if (childAgents != null) {
             for (CRUDServiceChildAgent agent : childAgents) {
                 affected += agent.updateMaster(m, filter, childKeyNames.get(agent), null);
+            }
+        }
+
+        /// append peer data
+        if (peerAgents != null) {
+            for (CRUDServicePeerAgent agent : peerAgents) {
+                affected += agent.updateMaster(m, filter, peerKeyNames.get(agent), null);
             }
         }
 
@@ -207,8 +258,8 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
         CRUDObject<M> crud = new CRUDObject<>();
 
         /// foreach slaves
-        if (slaveModelingAgents != null) {
-            for (CRUDServiceSlaveAgent agent : slaveModelingAgents) {
+        if (slaveAgents != null) {
+            for (CRUDServiceSlaveAgent agent : slaveAgents) {
                 crud.merge(agent.retrieveMaster(masterId, filter, slaveKeyNames.get(agent), null));
             }
         }
@@ -217,6 +268,13 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
         if (childAgents != null) {
             for (CRUDServiceChildAgent agent : childAgents) {
                 crud.merge(agent.retrieveMaster(masterId, filter, childKeyNames.get(agent), null));
+            }
+        }
+
+        /// append peer data
+        if (peerAgents != null) {
+            for (CRUDServicePeerAgent agent : peerAgents) {
+                crud.merge(agent.retrieveMaster(masterId, filter, peerKeyNames.get(agent), null));
             }
         }
 
@@ -241,8 +299,8 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
         boolean allowDeleted = true;
 
         /// foreach slaves
-        if (slaveModelingAgents != null) {
-            for (CRUDServiceSlaveAgent agent : slaveModelingAgents) {
+        if (slaveAgents != null) {
+            for (CRUDServiceSlaveAgent agent : slaveAgents) {
                 if (allowDeleted) {
                     if (agent.deleteMaster(masterId, slaveKeyNames.get(agent)) > 0) {
                         allowDeleted = false;
@@ -251,9 +309,19 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
             }
         }
 
+        /// foreach peer
+        if (peerAgents != null) {
+            for (CRUDServicePeerAgent agent : peerAgents) {
+                if (allowDeleted) {
+                    if (agent.deleteMaster(masterId, peerKeyNames.get(agent)) > 0) {
+                        allowDeleted = false;
+                    }
+                }
+            }
+        }
+
         if (childAgents != null) {
             /// allow to delete if no slave items
-
             if (allowDeleted) {
                 /// delete child if it has
                 for (CRUDServiceChildAgent agent : childAgents) {
