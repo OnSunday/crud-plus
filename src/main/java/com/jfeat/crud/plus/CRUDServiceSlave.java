@@ -20,11 +20,15 @@ public interface CRUDServiceSlave<I>{
 
     /// of Master
     List<I> masterSelectSlaveItemList(long masterId);
+    List<I> masterSelectSlaveItemList(String masterField);
     Integer masterRemoveSlaveItemList(long masterId);
+    Integer masterRemoveSlaveItemList(String masterField);
     @Transactional
     Integer masterChangeSlaveItemList(long masterId, List<I> items);
+    Integer masterChangeSlaveItemList(String masterField, List<I> items);
     /// additional
     List<I> masterSelectSlaveItemList(long masterId, String condition, String conditionValue);
+    List<I> masterSelectSlaveItemList(String masterField, String condition, String conditionValue);
 
     /// Bulk
     @Transactional

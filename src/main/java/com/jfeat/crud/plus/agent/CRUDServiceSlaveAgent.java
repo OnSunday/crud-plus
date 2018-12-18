@@ -58,8 +58,8 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
     /// Master Object, used to skip query
     //private JSONObject rawMasterObject;
 
-    private List<I> masterFindItemList(long masterId) {
-        return getSlaveItemMapper.selectList(new EntityWrapper<I>().eq(masterField(), masterId));
+    private List<I> masterFindItemList(String masterPrimaryKey) {
+        return getSlaveItemMapper.selectList(new EntityWrapper<I>().eq(masterField(), masterPrimaryKey));
     }
 
     private Integer masterRemoveItemList(long masterId) {
@@ -68,8 +68,23 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
         return getSlaveItemMapper.deleteByMap(condition);
     }
 
-    @Override
-    public Integer createMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
+    private Integer masterRemoveItemList(String masterId) {
+        HashMap<String, Object> condition = new HashMap<>();
+        condition.put(masterField(), masterId);
+        return getSlaveItemMapper.deleteByMap(condition);
+    }
+
+
+    /**
+     *
+     * @param m
+     * @param filter
+     * @param itemsFieldName slave列表属性名
+     * @param masterField master下挂slave的参照属性名
+     * @param handler
+     * @return
+     **/
+    public Integer createMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, String masterField, CRUDHandler<T, M> handler) {
         if (handler != null) {
             throw new RuntimeException("Must be handled by tool");
         }
@@ -87,7 +102,8 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
         /// handle slave items if contains slave items key
         if (masterObject.containsKey(itemsFieldName)) {
 
-            Long masterId = masterObject.getLong(CRUD.primaryKey);
+            String masterId = masterObject.getString(masterField);
+//            Long masterId = masterObject.getLong(CRUD.primaryKey);
 
             JSONArray itemsArray = masterObject.getJSONArray(itemsFieldName);
             JSONObject[] jsonObjects = CRUD.toJSONArray(itemsArray);
@@ -102,19 +118,31 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
             affected = super.bulkAppendMasterList(items);
 
             /// save the result into filter
-            if(filter!=null)
+            if(filter!=null);
             {
                 JSONArray array = CRUD.toJSONOArray(items);
                 filter.result().put(itemsFieldName, array);
             }
 
         }
-
         return affected;
     }
 
     @Override
-    public Integer updateMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
+    public Integer createMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
+        return createMaster(m, filter, itemsFieldName, CRUD.primaryKey, handler);
+    }
+
+    /**
+     *
+     * @param m
+     * @param filter
+     * @param itemsFieldName slave列表属性名
+     * @param masterField master下挂slave的参照属性名
+     * @param handler
+     * @return
+     **/
+    public Integer updateMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, String masterField, CRUDHandler<T, M> handler) {
         if (handler != null) {
             throw new RuntimeException("Must be handled by tool");
         }
@@ -127,7 +155,7 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
             Integer affected = 0;
 
             JSONObject modelObject = CRUD.toJSONObject(m);
-            Long masterId = modelObject.getLong(CRUD.primaryKey);
+            String masterId = modelObject.getString(masterField);
 
             /// remote the old ones
             affected += masterRemoveItemList(masterId);
@@ -153,7 +181,7 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
             if (modelObject.containsKey(itemsFieldName)) {
                 JSONArray modelItems = modelObject.getJSONArray(itemsFieldName);
 
-                Long masterId = modelObject.getLong(CRUD.primaryKey);
+                String masterId = modelObject.getString(masterField);
 
                 /// get original slave items
                 List<I> originalItems = getMasterMapper().selectList(new EntityWrapper<I>().eq(masterField(), masterId));
@@ -217,10 +245,22 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
             return affected;
         }
     }
-
-
     @Override
-    public CRUDObject<M> retrieveMaster(long masterId, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
+    public Integer updateMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
+        return updateMaster(m, filter, itemsFieldName, CRUD.primaryKey, handler);
+    }
+
+
+    /**
+     *
+     * @param masterId
+     * @param filter
+     * @param itemsFieldName slave列表属性名
+     * @param masterField master下挂slave的参照属性名
+     * @param handler
+     * @return
+     **/
+    public CRUDObject<M> retrieveMaster(long masterId, CRUDFilterResult<T> filter, String itemsFieldName, String masterField, CRUDHandler<T, M> handler) {
         if (handler != null) {
             throw new RuntimeException("Must be handled by tool");
         }
@@ -237,7 +277,7 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
         }
 
         /// append slave items
-        List<I> items = masterFindItemList(masterId);
+        List<I> items = masterFindItemList(masterField);
 
         if (items != null && items.size() > 0) {
             //// copy a new one
@@ -251,9 +291,16 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
     }
 
     @Override
+    public CRUDObject<M> retrieveMaster(long masterId, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
+        return retrieveMaster(masterId, filter, itemsFieldName, CRUD.primaryKey, handler);
+    }
+
+
+    @Override
+    @Deprecated
     public Integer deleteMaster(long masterId, String itemsFieldName) {
         /// check if master has slave
-        List<I> items = masterFindItemList(masterId);
+        List<I> items = masterFindItemList(itemsFieldName);
 
         if (items != null && items.size() > 0) {
             throw new BusinessException(BusinessCode.CRUD_DELETE_NOT_EMPTY_GROUP);

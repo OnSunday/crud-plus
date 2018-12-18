@@ -41,6 +41,8 @@ public abstract class CRUDServiceSlaveImpl<I> implements CRUDServiceSlave<I> {
     }
 
 
+
+
     abstract protected BaseMapper<I> getSlaveItemMapper();
     abstract protected String masterFieldName();
 
@@ -51,13 +53,11 @@ public abstract class CRUDServiceSlaveImpl<I> implements CRUDServiceSlave<I> {
     protected void checkMasterExists(I item){
         /// check master exists first
         if(getMasterMapper()!=null) {
-            Long masterId = CRUD.getFieldLong(item, masterFieldName());
-            if (masterId == null || masterId == 0) {
+            if (masterFieldName() == null || "".equals(masterFieldName())) {
                 throw new BusinessException(BusinessCode.CRUD_MASTER_KEY_NOT_PROVIDED);
             }
-
-            Object it = getMasterMapper().selectById(masterId);
-            if (it == null) {
+            Integer count = getMasterMapper().selectCount(new EntityWrapper().eq(masterFieldName(), masterFieldName()));
+            if (count == null || count == 0) {
                 throw new BusinessException(BusinessCode.CRUD_MASTER_NOT_EXISTS);
             }
         }
@@ -118,21 +118,36 @@ public abstract class CRUDServiceSlaveImpl<I> implements CRUDServiceSlave<I> {
     }
 
     @Override
-    public List<I> masterSelectSlaveItemList(long masterId) {
+    public List<I> masterSelectSlaveItemList(String masterField) {
         List<I> is = getSlaveItemMapper().selectList(
-                new EntityWrapper<I>().eq(masterFieldName(), masterId));
+                new EntityWrapper<I>().eq(masterFieldName(), masterField));
         return is;
+    }
+    @Override
+    public List<I> masterSelectSlaveItemList(long masterId) {
+        return masterSelectSlaveItemList(String.valueOf(masterId));
     }
 
     @Override
     @Transactional
+    public Integer masterRemoveSlaveItemList(String masterField) {
+        return getSlaveItemMapper().delete(new EntityWrapper<I>().eq(masterFieldName(), masterField));
+    }
+    @Override
+    @Transactional
     public Integer masterRemoveSlaveItemList(long masterId) {
-        return getSlaveItemMapper().delete(new EntityWrapper<I>().eq(masterFieldName(), masterId));
+        return masterRemoveSlaveItemList(String.valueOf(masterId));
     }
 
     @Override
     @Transactional
     public Integer masterChangeSlaveItemList(long masterId, List<I> items) {
+        return masterChangeSlaveItemList(String.valueOf(masterId), items);
+    }
+
+    @Override
+    @Transactional
+    public Integer masterChangeSlaveItemList(String masterField, List<I> items) {
         Integer affected = 0;
 
         /// bug: need to skip exist items
@@ -144,7 +159,7 @@ public abstract class CRUDServiceSlaveImpl<I> implements CRUDServiceSlave<I> {
         /// 3. remove the old ones
 
         /// get original slave items, delete the not exists one
-        List<I> originalItems = masterSelectSlaveItemList(masterId);
+        List<I> originalItems = masterSelectSlaveItemList(masterField);
 
         List<Long> skips = new ArrayList<>();
 
@@ -157,7 +172,7 @@ public abstract class CRUDServiceSlaveImpl<I> implements CRUDServiceSlave<I> {
                 /// get here , no id, this is new one
 
                 //bug: add master reference id
-                one.put(masterFieldName(), masterId);
+                one.put(masterFieldName(), masterField);
                 it = JSON.toJavaObject(one, (Class<I>)it.getClass());
 
                 /// add new item
@@ -201,14 +216,18 @@ public abstract class CRUDServiceSlaveImpl<I> implements CRUDServiceSlave<I> {
     }
 
     @Override
-    public List<I> masterSelectSlaveItemList(long masterId, String condition, String conditionValue) {
+    public List<I> masterSelectSlaveItemList(String masterField, String condition, String conditionValue) {
         List<I> is = getSlaveItemMapper().selectList(
                 new EntityWrapper<I>()
-                        .eq(masterFieldName(), masterId)
+                        .eq(masterFieldName(), masterField)
                         .and()
                         .eq(condition, conditionValue)
         );
         return is;
+    }
+    @Override
+    public List<I> masterSelectSlaveItemList(long masterId, String condition, String conditionValue) {
+        return masterSelectSlaveItemList(String.valueOf(masterId), condition, conditionValue);
     }
 
     @Override

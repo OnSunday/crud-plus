@@ -84,26 +84,49 @@ public abstract class CRUD<T> {
     }
 
     /**
-     * 取得类型 T 的关键字段
+     * 取得类型 T 的关键字段 Default: id
      *
      * @param t
      * @param <T>
      * @return
      */
     public static <T> Long getPrimaryKey(T t) {
+        return Long.parseLong(getPrimaryKey(t, primaryKey));
+    }
+
+    /**
+     * 取得类型 T 的关键字段primaryKey
+     * @param t
+     * @param primaryKey
+     * @return
+     **/
+    public static <T> String getPrimaryKey(T t, String primaryKey) {
         JSONObject json = CRUD.toJSONObject(t);
         if (!json.containsKey(primaryKey)) {
             throw new RuntimeException("Fail to find primary key:" + primaryKey);
         }
 
-        return json.getLong(primaryKey);
+        return json.getString(primaryKey);
     }
 
+    /**
+     * @param json
+     * @return
+     **/
     public static Long getPrimaryKey(JSONObject json) {
+        return Long.parseLong(getPrimaryKey(json, primaryKey));
+    }
+
+    /**
+     * @param json
+     * @param primaryKey
+     * @return
+     **/
+    public static String getPrimaryKey(JSONObject json, String primaryKey) {
         if (!json.containsKey(primaryKey)) {
             throw new RuntimeException("Fail to find primary key:" + primaryKey);
         }
-        return json.getLong(primaryKey);
+        return json.getString(primaryKey);
     }
 
     /**
