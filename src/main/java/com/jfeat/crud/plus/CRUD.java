@@ -19,6 +19,7 @@ import static com.alibaba.fastjson.serializer.SerializerFeature.WriteMapNullValu
  */
 public abstract class CRUD<T> {
     public static final String primaryKey = "id";
+    public static final String ONE_MANY_LINK_SYMBOL = "$_$";
 
     public static <T> JSONObject toJSONObject(T t) {
         return JSON.parseObject(JSONObject.toJSONString(t, SerializerFeature.WriteDateUseDateFormat));
@@ -290,6 +291,16 @@ public abstract class CRUD<T> {
      * @param from
      * @return
      */
+    public static <T> T copyFrom(T t, T from, boolean override) {
+        JSONObject target = JSON.parseObject(JSON.toJSONString(t, WriteMapNullValue));
+
+        JSONObject fromObject = JSON.parseObject(JSON.toJSONString(from, WriteMapNullValue));
+
+        copyFrom(target, fromObject, override);
+
+        return JSON.parseObject(target.toJSONString(), (Class<T>) t.getClass());
+    }
+
     public static <T> T copyFrom(T t, JSONObject from, boolean override) {
         JSONObject target = JSON.parseObject(JSON.toJSONString(t, WriteMapNullValue));
 

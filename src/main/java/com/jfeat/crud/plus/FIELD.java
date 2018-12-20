@@ -7,9 +7,16 @@ import com.baomidou.mybatisplus.mapper.BaseMapper;
  */
 
 public class FIELD {
+    /// 在实体中的 ItEMS 键值名，如实体复杂 entities 代替 items
     private String itemKeyName;
+    /// Slave field name used to binding master field
     private String itemFieldName;
+    /// master field name used by Slave field name to binding
+    /// default binding to PRIMARY KEY "id"
+    private String foreignItemFieldName;
+    /// Slave entity class name
     private Class itemClassName;
+    /// Slave entity Mapper
     private BaseMapper itemMapper;
 
     //for peer
@@ -30,7 +37,30 @@ public class FIELD {
     }
 
     public void setItemFieldName(String itemFieldName) {
-        this.itemFieldName = itemFieldName;
+
+        // check itemFieldNamePair with $_$
+        if(itemFieldName!=null && itemFieldName.contains(CRUD.ONE_MANY_LINK_SYMBOL)){
+
+            String[] names = itemFieldName.split(CRUD.ONE_MANY_LINK_SYMBOL);
+
+            this.itemFieldName = names[0];
+            if(names.length==1){
+                this.foreignItemFieldName = names[0];
+            }else {
+                this.foreignItemFieldName = names[1];
+            }
+
+        }else {
+            this.itemFieldName = itemFieldName;
+        }
+    }
+
+    public String getForeignItemFieldName() {
+        return foreignItemFieldName;
+    }
+
+    public void setForeignItemFieldName(String fieldName) {
+        this.foreignItemFieldName = fieldName;
     }
 
     public Class getItemClassName() {

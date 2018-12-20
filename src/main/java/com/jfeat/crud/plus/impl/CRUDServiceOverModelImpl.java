@@ -18,6 +18,11 @@ import java.util.Map;
 /**
  * Created by vincent on 2017/8/11.
  * Used to implement multi slaves and child
+ *
+ * About field names:
+ * fieldNames Used to define the JSON key names
+ * e.g. snapshots,payment, but not table field name
+ *
  */
 public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServiceOnlyImpl<T>
         implements CRUDServiceOverModel<T, M> {
@@ -64,7 +69,7 @@ public abstract class CRUDServiceOverModelImpl<T, M extends T> extends CRUDServi
 
                     CRUDServiceSlaveAgent agent = new CRUDServiceSlaveAgent<T, M, Object>(
                             getMasterMapper(), _field.getItemMapper(),
-                            _field.getItemFieldName(), _field.getItemClassName()
+                            _field.getItemFieldName(), _field.getForeignItemFieldName(), _field.getItemClassName()
                     );
                     agent.setMasterClassName(masterClassName());
 

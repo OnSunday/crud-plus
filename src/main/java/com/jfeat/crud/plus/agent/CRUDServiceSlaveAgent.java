@@ -9,6 +9,7 @@ import com.jfeat.crud.base.exception.BusinessCode;
 import com.jfeat.crud.base.exception.BusinessException;
 import com.jfeat.crud.plus.*;
 import com.jfeat.crud.plus.impl.CRUDServiceOnlyImpl;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,21 +26,19 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
     protected BaseMapper<T> getMasterMapper;
     protected BaseMapper<I> getSlaveItemMapper;
 
-    private String masterFieldName;
+    private String masterFieldName;            // the field name associated to master table
+    private String foreignMasterFieldName;     // the field name on master table
     protected Class<I> itemClassName;
-
-    @Override
-    protected String masterField() {
-        return masterFieldName;
-    }
 
     public CRUDServiceSlaveAgent(BaseMapper<T> getMasterMapper,
                                  BaseMapper<I> getSlaveItemMapper,
                                  String masterFieldName,
+                                 String foreignMasterFieldName,
                                  Class<I> itemClassName) {
         this.getMasterMapper = getMasterMapper;
         this.getSlaveItemMapper = getSlaveItemMapper;
         this.masterFieldName = masterFieldName;
+        this.foreignMasterFieldName = foreignMasterFieldName;
         this.itemClassName = itemClassName;
     }
 
@@ -59,18 +58,17 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
     //private JSONObject rawMasterObject;
 
     private List<I> masterFindItemList(String masterPrimaryKey) {
-        return getSlaveItemMapper.selectList(new EntityWrapper<I>().eq(masterField(), masterPrimaryKey));
+        return getSlaveItemMapper.selectList(new EntityWrapper<I>().eq(masterFieldName, masterPrimaryKey));
     }
 
-    private Integer masterRemoveItemList(long masterId) {
+    /**
+     * master can be instance of Long or String
+     * @param masterId
+     * @return
+     */
+    private Integer masterRemoveItemList(Object masterId) {
         HashMap<String, Object> condition = new HashMap<>();
-        condition.put(masterField(), masterId);
-        return getSlaveItemMapper.deleteByMap(condition);
-    }
-
-    private Integer masterRemoveItemList(String masterId) {
-        HashMap<String, Object> condition = new HashMap<>();
-        condition.put(masterField(), masterId);
+        condition.put(masterFieldName, masterId);
         return getSlaveItemMapper.deleteByMap(condition);
     }
 
@@ -79,12 +77,11 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
      *
      * @param m
      * @param filter
-     * @param itemsFieldName slave列表属性名
-     * @param masterField master下挂slave的参照属性名
+     * @param itemsFieldName slave items key name
      * @param handler
      * @return
      **/
-    public Integer createMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, String masterField, CRUDHandler<T, M> handler) {
+    public Integer createMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
         if (handler != null) {
             throw new RuntimeException("Must be handled by tool");
         }
@@ -102,7 +99,8 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
         /// handle slave items if contains slave items key
         if (masterObject.containsKey(itemsFieldName)) {
 
-            String masterId = masterObject.getString(masterField);
+            String masterKey = foreignMasterFieldName !=null? foreignMasterFieldName : CRUD.primaryKey;
+            Object masterId = masterObject.get(masterKey);
 //            Long masterId = masterObject.getLong(CRUD.primaryKey);
 
             JSONArray itemsArray = masterObject.getJSONArray(itemsFieldName);
@@ -128,21 +126,15 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
         return affected;
     }
 
-    @Override
-    public Integer createMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
-        return createMaster(m, filter, itemsFieldName, CRUD.primaryKey, handler);
-    }
-
     /**
      *
      * @param m
      * @param filter
-     * @param itemsFieldName slave列表属性名
-     * @param masterField master下挂slave的参照属性名
+     * @param itemsFieldName slave JSON items key name
      * @param handler
      * @return
      **/
-    public Integer updateMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, String masterField, CRUDHandler<T, M> handler) {
+    public Integer updateMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
         if (handler != null) {
             throw new RuntimeException("Must be handled by tool");
         }
@@ -155,7 +147,9 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
             Integer affected = 0;
 
             JSONObject modelObject = CRUD.toJSONObject(m);
-            String masterId = modelObject.getString(masterField);
+
+            String masterKey = foreignMasterFieldName !=null? foreignMasterFieldName : CRUD.primaryKey;
+            Object masterId = modelObject.get(masterKey);
 
             /// remote the old ones
             affected += masterRemoveItemList(masterId);
@@ -181,10 +175,11 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
             if (modelObject.containsKey(itemsFieldName)) {
                 JSONArray modelItems = modelObject.getJSONArray(itemsFieldName);
 
-                String masterId = modelObject.getString(masterField);
+                String masterKey = foreignMasterFieldName !=null? foreignMasterFieldName : CRUD.primaryKey;
+                Object masterId = modelObject.get(masterKey);
 
                 /// get original slave items
-                List<I> originalItems = getMasterMapper().selectList(new EntityWrapper<I>().eq(masterField(), masterId));
+                List<I> originalItems = getMasterMapper().selectList(new EntityWrapper<I>().eq(masterFieldName, masterId));
 
                 List<Long> skips = new ArrayList<>();
 
@@ -245,11 +240,6 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
             return affected;
         }
     }
-    @Override
-    public Integer updateMaster(M m, CRUDFilterResult<T> filter, String itemsFieldName, CRUDHandler<T, M> handler) {
-        return updateMaster(m, filter, itemsFieldName, CRUD.primaryKey, handler);
-    }
-
 
     /**
      *

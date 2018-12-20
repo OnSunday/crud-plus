@@ -18,15 +18,6 @@ public abstract class CRUDServiceOnlyImpl<T> implements CRUDServiceOnly<T> {
 
     abstract protected BaseMapper<T> getMasterMapper();
 
-    /**
-     * for slave purpose
-     *
-     * @return
-     */
-    protected String masterField() {
-        throw new RuntimeException("You should override the masterField for slave situation");
-    }
-
     @Override
     @Transactional
     public Integer createMaster(T t) {

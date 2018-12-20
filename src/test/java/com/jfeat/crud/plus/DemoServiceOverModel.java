@@ -14,13 +14,11 @@ public class DemoServiceOverModel extends CRUDServiceOverModelImpl<DemoType, Dem
     @Resource
     BaseMapper<DemoType> masterMapper;
 
-
     @Resource
     BaseMapper<DemoItem> slaveItemMapper;
 
     @Resource
     BaseMapper<DemoItem> childItemMapper;
-
 
     @Override
     protected BaseMapper<DemoType> getMasterMapper() {
@@ -45,7 +43,8 @@ public class DemoServiceOverModel extends CRUDServiceOverModelImpl<DemoType, Dem
             FIELD _field = new FIELD();
 
             _field.setItemKeyName(field);
-            _field.setItemFieldName("demo_type_id");
+            _field.setItemFieldName("snapshot_field");
+            _field.setForeignItemFieldName("snapshot_field");
             _field.setItemClassName(DemoItem.class);
             _field.setItemMapper(slaveItemMapper);
 
@@ -55,6 +54,7 @@ public class DemoServiceOverModel extends CRUDServiceOverModelImpl<DemoType, Dem
 
             _field.setItemKeyName(field);
             _field.setItemFieldName("demo_type_id");
+            _field.setForeignItemFieldName(CRUD.primaryKey);  // default "id"
             _field.setItemClassName(DemoItem.class);
             _field.setItemMapper(slaveItemMapper);
 
