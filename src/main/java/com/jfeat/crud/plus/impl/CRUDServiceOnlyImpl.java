@@ -1,13 +1,17 @@
 package com.jfeat.crud.plus.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.jfeat.crud.base.exception.BusinessCode;
 import com.jfeat.crud.base.exception.BusinessException;
 import com.jfeat.crud.plus.CRUD;
 import com.jfeat.crud.plus.CRUDFilter;
 import com.jfeat.crud.plus.CRUDServiceOnly;
+import com.jfeat.crud.plus.META;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -59,9 +63,9 @@ public abstract class CRUDServiceOnlyImpl<T> implements CRUDServiceOnly<T> {
     @Transactional
     public Integer updateMaster(T t, boolean all) {
         if (all) {
-            return getMasterMapper().updateAllColumnById(t);
-        } else {
             return updateMaster(t);
+        } else {
+            return getMasterMapper().updateById(t);
         }
     }
 
@@ -82,11 +86,35 @@ public abstract class CRUDServiceOnlyImpl<T> implements CRUDServiceOnly<T> {
         if (originalOne != null) {
 
             /// ignore some fields from record
+            //meta: should not ignore status
+            ArrayList<String> ignoreList = new ArrayList<>();
+            if(META.ignoreStatus()){
+                ignoreList.add(META.statusKey);
+            }
+            if(META.ignoreTimestamp()){
+                ignoreList.add(META.createTime);
+                ignoreList.add(META.lastModifiedTime);
+            }
+            if(filter!=null){
+                String[] ignores = filter.ignore(false);
+                if(ignores!=null) {
+                    for (String item : ignores) {
+                        ignoreList.add(item);
+                    }
+                }
+            }
+            String[] ignores = new String[ignoreList.size()];
+            ignoreList.toArray(ignores);
+            /// end add status
 
-            //fix: should not ignore status
-            //String[] ignoreStatus = new String[]{CRUD.statusKey};
-            String[] ignoreStatus = new String[]{};
-            T updatedOne = CRUD.copyFrom(originalOne, t, filter != null ? filter.ignore(false) : ignoreStatus, true);
+            // auto update lastModifiedTime
+            JSONObject extra = null;
+            if(META.ignoreTimestamp()){
+                extra = new JSONObject();
+                extra.put(META.lastModifiedTime, new Date());
+            }
+
+            T updatedOne = CRUD.copyFrom(originalOne, t, ignores, extra, true);
 
             return getMasterMapper().updateAllColumnById(updatedOne);
         }
