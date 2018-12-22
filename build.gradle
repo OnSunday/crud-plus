@@ -28,7 +28,9 @@ apply from: 'bintray.gradle'
 dependencies {
    compile 'com.jfeat:crud-base:0.0.1'
    compile 'com.alibaba:fastjson:1.2.31'
+   compile 'com.alibaba:druid:1.0.28'
    compile 'com.baomidou:mybatis-plus:2.1.9'
+   compile 'com.baomidou:mybatisplus-spring-boot-starter:1.0.5'
    testCompile 'junit:junit:4.12'
 }
 
