@@ -2,6 +2,7 @@ package com.jfeat.am.config;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.baomidou.mybatisplus.enums.DBType;
+import com.baomidou.mybatisplus.plugins.OptimisticLockerInterceptor;
 import com.baomidou.mybatisplus.plugins.PaginationInterceptor;
 import com.jfeat.am.config.properties.DruidProperties;
 import org.mybatis.spring.annotation.MapperScan;
@@ -21,6 +22,15 @@ public class MybatisPlusConfig {
 
     @Autowired
     DruidProperties druidProperties;
+
+    /**
+     * 乐观锁
+     * @return
+     */
+    @Bean
+    public OptimisticLockerInterceptor optimisticLockerInterceptor() {
+        return new OptimisticLockerInterceptor();
+    }
 
     /**
      * mybatis-plus分页插件
