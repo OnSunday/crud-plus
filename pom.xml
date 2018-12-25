@@ -5,11 +5,11 @@
 
     <groupId>com.jfeat</groupId>
     <artifactId>crud-plus</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <packaging>jar</packaging>
 
-    <name>SpringBoot-Framework-CRUD</name>
-    <description>CRUD Library</description>
+    <name>SpringBoot-Framework-CRUD-PLUS</name>
+    <description>CRUD Plus Library</description>
 
     <properties>
         <crud-base.version>0.0.1</crud-base.version>
