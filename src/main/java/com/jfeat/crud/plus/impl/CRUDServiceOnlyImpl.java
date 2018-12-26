@@ -92,7 +92,7 @@ public abstract class CRUDServiceOnlyImpl<T> implements CRUDServiceOnly<T> {
                 ignoreList.add(META.statusKey);
             }
             if(META.ignoreTimestamp()){
-                ignoreList.add(META.createTime);
+                ignoreList.add(META.createdTime);
                 ignoreList.add(META.lastModifiedTime);
             }
             if(filter!=null){

@@ -19,7 +19,7 @@ import static com.alibaba.fastjson.serializer.SerializerFeature.WriteMapNullValu
  */
 public abstract class CRUD<T> {
     public static final String primaryKey = "id";
-    public static final String ONE_MANY_LINK_SYMBOL = "$_$";
+    public static final String ONE_MANY_LINK_SYMBOL = ":";
 
     public static <T> JSONObject toJSONObject(T t) {
         return JSON.parseObject(JSONObject.toJSONString(t, SerializerFeature.WriteDateUseDateFormat));

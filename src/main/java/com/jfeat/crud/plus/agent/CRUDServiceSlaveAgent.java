@@ -37,8 +37,18 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
                                  Class<I> itemClassName) {
         this.getMasterMapper = getMasterMapper;
         this.getSlaveItemMapper = getSlaveItemMapper;
-        this.masterFieldName = masterFieldName;
-        this.foreignMasterFieldName = foreignMasterFieldName;
+
+        if(masterFieldName.contains(CRUD.ONE_MANY_LINK_SYMBOL) && (foreignMasterFieldName==null || foreignMasterFieldName.length()==0)){
+            this.masterFieldName = masterFieldName.substring(0,masterFieldName.indexOf(CRUD.ONE_MANY_LINK_SYMBOL));
+            this.foreignMasterFieldName = masterFieldName.substring(masterFieldName.indexOf(CRUD.ONE_MANY_LINK_SYMBOL)+1,masterFieldName.length());
+        }else if(masterFieldName.contains(CRUD.ONE_MANY_LINK_SYMBOL)){
+            this.masterFieldName = masterFieldName.substring(0,masterFieldName.indexOf(CRUD.ONE_MANY_LINK_SYMBOL));
+        }else {
+            this.masterFieldName = masterFieldName;
+        }
+        if(foreignMasterFieldName!=null) {
+            this.foreignMasterFieldName = foreignMasterFieldName;
+        }
         this.itemClassName = itemClassName;
     }
 

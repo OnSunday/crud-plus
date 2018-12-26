@@ -5,7 +5,7 @@ package com.jfeat.crud.plus;
  */
 public class META {
     public static final String statusKey = "status";
-    public static final String createTime = "createTime";
+    public static final String createdTime = "createdTime";
     public static final String lastModifiedTime = "lastModifiedTime";
 
     /**
