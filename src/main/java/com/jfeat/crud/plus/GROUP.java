@@ -73,7 +73,30 @@ public class GROUP {
         return target;
     }
 
+    /**
+     * group the entity tuples by group tuples default groupId="id"
+     * @param tuples group tuples
+     * @param byTuples entity tuples
+     * @param groupby the key in entity tuple JSONObject
+     * @param <T>
+     * @param <C>
+     * @return
+     */
     public static <T, C> JSONObject groupedBy(List<T> tuples, List<C> byTuples, String groupby) {
+        return groupedBy(tuples, byTuples, groupby, ID);
+    }
+
+    /**
+     * group the entity tuples by group tuples
+     * @param tuples   group tuples
+     * @param byTuples  entity tuples
+     * @param groupby  the key in entity tuple JSONObject
+     * @param groupId  the key in group tuple JSONObject
+     * @param <T>
+     * @param <C>
+     * @return
+     */
+    public static <T, C> JSONObject groupedBy(List<T> tuples, List<C> byTuples, String groupby, String groupId) {
         JSONObject groups = toJSONObject(tuples);
         groupby = StrKit.toCamelCase(groupby);
 
@@ -81,7 +104,7 @@ public class GROUP {
             JSONObject byJson = CRUD.toJSONObject(by);
             Object groupbyValue = byJson.get(groupby);
 
-            JSONObject found = findChildGroup(groups, ITEMS, ID, groupbyValue);
+            JSONObject found = findChildGroup(groups, ITEMS, groupId, groupbyValue);
 
             /// add it to
             if (found != null) {
