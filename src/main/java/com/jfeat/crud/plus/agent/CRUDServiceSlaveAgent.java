@@ -67,8 +67,8 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
     /// Master Object, used to skip query
     //private JSONObject rawMasterObject;
 
-    private List<I> masterFindItemList(String masterPrimaryKey) {
-        return getSlaveItemMapper.selectList(new EntityWrapper<I>().eq(masterFieldName, masterPrimaryKey));
+    private List<I> masterFindItemList(long masterId) {
+        return getSlaveItemMapper.selectList(new EntityWrapper<I>().eq(masterFieldName, masterId));
     }
 
     /**
@@ -277,7 +277,7 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
         }
 
         /// append slave items
-        List<I> items = masterFindItemList(masterField);
+        List<I> items = masterFindItemList(masterId);
 
         if (items != null && items.size() > 0) {
             //// copy a new one
@@ -300,7 +300,7 @@ public class CRUDServiceSlaveAgent<T, M extends T, I> extends CRUDServiceOnlyImp
     @Deprecated
     public Integer deleteMaster(long masterId, String itemsFieldName) {
         /// check if master has slave
-        List<I> items = masterFindItemList(itemsFieldName);
+        List<I> items = masterFindItemList(masterId);
 
         if (items != null && items.size() > 0) {
             throw new BusinessException(BusinessCode.CRUD_DELETE_NOT_EMPTY_GROUP);
